@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Satu baris telemetri yang dikirim ESP32 pada topi.
+model Telemetry {
+  id           String   @id @default(cuid())
+  deviceId     String
+  panelVoltage Float
+  temperature  Float
+  humidity     Float
+  fanSpeed     Int
+  recordedAt   DateTime @default(now())
+
+  @@index([deviceId, recordedAt])
+}
+
+// Perintah terbaru untuk satu perangkat. ESP32 mengambil (polling)
+// perintah ini; perintah dianggap sudah diterapkan saat appliedAt terisi.
+model DeviceCommand {
+  id        String    @id @default(cuid())
+  deviceId  String
+  fanSpeed  Int
+  mode      String
+  createdAt DateTime  @default(now())
+  appliedAt DateTime?
+
+  @@index([deviceId, createdAt])
+}
