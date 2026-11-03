@@ -23,3 +23,33 @@
 - Sapuan keamanan ringan Day 15: tidak ada endpoint/auth/upload baru —
   hanya halaman statis + skema; tidak ada secret yang di-commit
   (.env.example hanya berisi placeholder).
+
+## Pelajaran Day 16 (API telemetri + dasbor live + kontrol kipas)
+
+- Issues #2 (API telemetri), #3 (dasbor live), #4 (kontrol kipas)
+  ditutup lewat badan pesan commit terakhir masing-masing fitur
+  (`Closes #n`), sesuai pelajaran Day 15.
+- POST /api/telemetry memvalidasi tiap kolom (rentang angka, deviceId
+  1–64 karakter) dan menolak JSON tak valid; GET membatasi limit 1–100.
+  GET /api/command mewajibkan deviceId supaya perangkat tidak saling
+  mengambil perintah. Token perangkat (header x-device-token, env
+  TELEMETRY_TOKEN) bersifat opsional: aktif hanya bila env dipasang,
+  supaya demo/simulator Day 17 tidak terkunci.
+- Konfirmasi perintah: ESP32 menyertakan `appliedCommandId` pada
+  telemetri berikutnya; server menandai `appliedAt` hanya bila perintah
+  itu milik perangkat yang sama dan belum ditandai.
+- Dasbor `/dashboard`: polling GET /api/telemetry tiap 10 detik, kartu
+  metrik, grafik tegangan SVG murni (tanpa pustaka), tabel 20 terbaru,
+  dan formulir kontrol kipas (slider + mode auto/manual) dengan status
+  perintah terbaru. Keadaan kosong jujur ("Belum ada data") — tidak ada
+  angka karangan.
+- Verifikasi lokal tetap `prisma generate && next build` (migrate deploy
+  hanya di Vercel, env DB tidak ada di VM). Validasi API diuji lewat
+  dev server lokal: POST tak valid mengembalikan rincian per kolom,
+  GET command tanpa deviceId mengembalikan 400 — sebelum data sempat
+  menyentuh database.
+- Sapuan keamanan ringan Day 16: tidak ada secret yang di-commit;
+  .env.example hanya berisi placeholder + TELEMETRY_TOKEN kosong.
+  Catatan terbuka: endpoint telemetri tanpa token masih terbuka bila
+  env tidak dipasang — sengaja untuk demo, pasang token sebelum
+  perangkat dipakai di luar demo.
