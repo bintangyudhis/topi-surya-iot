@@ -2,6 +2,9 @@
 
 Dasbor web memakai tiga endpoint ini. Semua waktu memakai zona server
 (`recordedAt`/`createdAt`); dasbor menampilkan waktu dalam WIB.
+Contoh curl di bawah memakai subdomain yang direncanakan untuk project
+ini — ganti dengan alamat deploy yang aktif bila subdomain belum
+terpasang.
 
 ## POST /api/telemetry — kirim data perangkat
 
