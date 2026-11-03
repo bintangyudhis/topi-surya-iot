@@ -17,6 +17,9 @@ export default function BilahAtas() {
           <a href="#data" className="hover:text-accent">
             Data
           </a>
+          <a href="/dashboard" className="hover:text-accent">
+            Dasbor live
+          </a>
           <a
             href="https://github.com/bintangyudhis/topi-surya-iot"
             target="_blank"
