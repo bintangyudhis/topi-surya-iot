@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { tokenPerangkatSah, validasiTelemetri } from "@/lib/telemetri";
 
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const deviceId = searchParams.get("deviceId") ?? undefined;
+  const limitMentah = Number(searchParams.get("limit") ?? 50);
+  const limit = Number.isFinite(limitMentah) ? Math.min(Math.max(Math.floor(limitMentah), 1), 100) : 50;
+  const baris = await prisma.telemetry.findMany({
+    where: deviceId ? { deviceId } : undefined,
+    orderBy: { recordedAt: "desc" },
+    take: limit,
+  });
+  return NextResponse.json({ data: baris });
+}
+
 export async function POST(request: Request) {
   if (!tokenPerangkatSah(request)) {
     return NextResponse.json({ galat: "token perangkat tidak sah" }, { status: 401 });
