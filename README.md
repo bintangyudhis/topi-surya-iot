@@ -44,6 +44,16 @@ Setiap pengiriman dari perangkat tersimpan sebagai satu baris telemetri:
 Perintah untuk perangkat tersimpan di tabel `DeviceCommand`
 (`deviceId`, `fanSpeed`, `mode`, `createdAt`, `appliedAt`).
 
+## Dasbor live
+
+Buka `/dashboard`: kartu metrik terbaru (tegangan panel, suhu,
+kelembapan, kecepatan kipas), grafik tegangan panel dari 50 pengiriman
+terakhir, tabel pengiriman terbaru, dan formulir kontrol kipas. Data
+diperbarui otomatis tiap 10 detik; perintah kipas yang dikirim dari
+formulir diambil perangkat pada polling berikutnya dan statusnya berubah
+menjadi "diterapkan" setelah perangkat mengonfirmasi lewat telemetri.
+Kontrak lengkap tiap endpoint ada di [docs/API.md](docs/API.md).
+
 ## Teknologi
 
 - Next.js 16 + Tailwind v4 + React 19 untuk web server dan dasbor
@@ -69,7 +79,7 @@ Satu deploy per hari lewat commit kosong `Day N: deploy` (tanpa
 
 ## Rencana
 
-- Dasbor live + grafik tegangan (API terima telemetri dan kontrol kipas)
+- Dasbor live + grafik tegangan + kontrol kipas — selesai (Day 16)
 - Firmware ESP32 (`.ino`)
 - Simulator, riwayat telemetri, statistik energi harian, export CSV
 - Diagram wiring, daftar belanja hardware, dan panduan rakit
