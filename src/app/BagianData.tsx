@@ -15,8 +15,13 @@ export default function BagianData() {
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
           Setiap pengiriman dari perangkat tersimpan sebagai satu baris
-          telemetri. Dasbor live, riwayat, dan grafik menyusul di hari
-          berikutnya; skema di bawah ini sudah final untuk mereka.
+          telemetri. Data itu tampil di{" "}
+          <a href="/dashboard" className="font-medium text-accent underline">
+            dasbor live
+          </a>
+          , yang diperbarui otomatis tiap 10 detik beserta grafik tegangan
+          panelnya. Riwayat lengkap dan statistik energi menyusul di hari
+          berikutnya.
         </p>
         <dl className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-2">
           {KOLOM.map((kolom) => (
