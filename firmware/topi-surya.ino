@@ -89,6 +89,23 @@ bool bacaDht(float &suhu, float &kelembapan) {
   return !isnan(suhu) && !isnan(kelembapan);
 }
 
+void terapkanKipas(int persen) {
+  persen = constrain(persen, 0, 100);
+  fanSpeedPercent = persen;
+  ledcWrite(FAN_CHANNEL, (persen * 255) / 100);
+}
+
+// Mode auto: kecepatan naik bersama suhu, tapi nol bila panel hampir
+// tidak menghasilkan daya (mendung total / malam) supaya baterai tidak
+// terkuras. Ambang ini asumsi awal — sesuaikan setelah uji lapangan.
+int hitungKipasAuto(float teganganPanel, float suhu) {
+  if (teganganPanel < 3.0) return 0;
+  if (suhu >= 34) return 100;
+  if (suhu >= 31) return 75;
+  if (suhu >= 28) return 50;
+  return 30;
+}
+
 void setup() {
   Serial.begin(115200);
   dht.begin();
