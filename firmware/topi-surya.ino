@@ -69,6 +69,26 @@ void hubungkanWiFi() {
   }
 }
 
+float bacaTeganganPanel() {
+  // Rata-rata 10 sampel ADC untuk meredam derau, lalu konversi ke volt
+  // panel lewat faktor pembagi tegangan.
+  long total = 0;
+  for (int i = 0; i < 10; i++) {
+    total += analogRead(VOLT_PIN);
+    delay(5);
+  }
+  float rataRata = total / 10.0;
+  return (rataRata / ADC_RESOLUTION) * ADC_REF_VOLT * DIVIDER_FACTOR;
+}
+
+bool bacaDht(float &suhu, float &kelembapan) {
+  // DHT22 kadang gagal baca sekali; pemanggil memakai nilai terakhir
+  // yang sah bila bacaan ini gagal (NaN).
+  suhu = dht.readTemperature();
+  kelembapan = dht.readHumidity();
+  return !isnan(suhu) && !isnan(kelembapan);
+}
+
 void setup() {
   Serial.begin(115200);
   dht.begin();
