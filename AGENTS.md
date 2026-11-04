@@ -24,6 +24,42 @@
   hanya halaman statis + skema; tidak ada secret yang di-commit
   (.env.example hanya berisi placeholder).
 
+## Pelajaran Day 17 (firmware + simulator + riwayat + docs, hari terakhir)
+
+- Issues #5 (firmware), #6 (simulator + riwayat + CSV), #7 (docs
+  hardware + README final) ditutup lewat badan pesan commit TERAKHIR
+  masing-masing fitur (`Closes #n`), sesuai pelajaran Day 15/16.
+- Firmware `firmware/topi-surya.ino` ditulis bertahap per unit (config
+  + WiFi, sensor, PWM/auto, kirim telemetri, polling perintah).
+  Perangkap yang diperbaiki sebelum commit: loop mode auto sempat
+  menghitung ulang kecepatan tanpa batas atas server — diperbaiki
+  dengan variabel `batasAtasAuto` yang diisi perintah server dan
+  dipakai `min()` di loop. Parsing JSON perintah manual (indexOf)
+  supaya tanpa dependensi ArduinoJson; bentuk jawaban server tetap.
+- Simulator `simulator/simulator.mjs` (Node, tanpa dependensi) memakai
+  model sensor yang sama persis dengan ambang auto firmware; modelnya
+  dilabeli demo di kode dan README, bukan data lapangan.
+- Riwayat: GET /api/riwayat memvalidasi tanggal (YYYY-MM-DD, hari WIB
+  = UTC+7), deviceId maks 64 karakter, batas 10.000 baris; CSV mengutip
+  deviceId. Statistik energi memakai asumsi tertulis di
+  `src/lib/statistik.ts` dan di UI (sampel = 10 detik, kipas 5 V /
+  0,2 A) — jangan jadikan angka mutlak tanpa spesifikasi kipas asli.
+- Halaman `/riwayat`: grafik diringkas ke maks 200 titik, tabel
+  dipaginasi 100 baris/halaman (satu hari penuh bisa 8.640 baris).
+- Sapuan keamanan PENUH Day 17: tidak ada secret yang di-commit
+  (.env.example hanya placeholder; kredensial WiFi firmware hanya
+  placeholder `NAMA_WIFI_ANDA`/`SANDI_WIFI_ANDA`), tidak ada
+  dangerouslySetInnerHTML/eval, tidak ada file .env/.pem ter-track,
+  input riwayat divalidasi server-side. `npm audit` tidak bisa jalan
+  karena repo tidak punya package-lock.json — dicatat sebagai batasan,
+  bukan dipaksakan dengan membuat lockfile. Temuan besar yang tersisa
+  dibuka sebagai issue #8: POST /api/command tanpa autentikasi (siapa
+  pun yang tahu deviceId bisa mengubah kipas); belum dikunci karena
+  dasbor browser tidak memegang token — perlu desain auth dasbor dulu.
+  GET telemetri/riwayat terbuka adalah data dasbor publik, bukan temuan.
+- Verifikasi lokal tetap `prisma generate && next build` (migrate
+  deploy hanya di Vercel, env DB tidak ada di VM).
+
 ## Pelajaran Day 16 (API telemetri + dasbor live + kontrol kipas)
 
 - Issues #2 (API telemetri), #3 (dasbor live), #4 (kontrol kipas)
