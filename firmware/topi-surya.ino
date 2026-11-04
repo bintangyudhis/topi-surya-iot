@@ -106,6 +106,40 @@ int hitungKipasAuto(float teganganPanel, float suhu) {
   return 30;
 }
 
+// Nilai sensor terakhir yang sah; dipakai bila satu bacaan DHT22 gagal.
+float suhuTerakhir = 0;
+float kelembapanTerakhir = 0;
+// Id perintah yang baru diterapkan dan belum dikonfirmasi ke server.
+String perintahBaruDiterapkan = "";
+
+void kirimTelemetri(float tegangan, float suhu, float kelembapan) {
+  if (WiFi.status() != WL_CONNECTED) return;
+  HTTPClient http;
+  http.begin(String(SERVER_URL) + "/api/telemetry");
+  http.addHeader("Content-Type", "application/json");
+  if (strlen(DEVICE_TOKEN) > 0) {
+    http.addHeader("x-device-token", DEVICE_TOKEN);
+  }
+  String muatan = "{\"deviceId\":\"" + String(DEVICE_ID) + "\"";
+  muatan += ",\"panelVoltage\":" + String(tegangan, 2);
+  muatan += ",\"temperature\":" + String(suhu, 1);
+  muatan += ",\"humidity\":" + String(kelembapan, 1);
+  muatan += ",\"fanSpeed\":" + String(fanSpeedPercent);
+  if (perintahBaruDiterapkan.length() > 0) {
+    muatan += ",\"appliedCommandId\":\"" + perintahBaruDiterapkan + "\"";
+  }
+  muatan += "}";
+  int kode = http.POST(muatan);
+  if (kode == 201) {
+    // Konfirmasi terkirim; perintah tidak perlu dikirim ulang.
+    perintahBaruDiterapkan = "";
+  } else {
+    Serial.print("Telemetri gagal, kode HTTP: ");
+    Serial.println(kode);
+  }
+  http.end();
+}
+
 void setup() {
   Serial.begin(115200);
   dht.begin();
@@ -128,8 +162,22 @@ void loop() {
   unsigned long sekarang = millis();
   if (sekarang - lastSendMs >= SEND_INTERVAL_MS) {
     lastSendMs = sekarang;
-    // Langkah berikutnya: baca sensor, terapkan perintah, kirim telemetri.
-    Serial.println("Siklus 10 detik: sensor + perintah + telemetri (menyusul).");
+    float tegangan = bacaTeganganPanel();
+    float suhu, kelembapan;
+    if (bacaDht(suhu, kelembapan)) {
+      suhuTerakhir = suhu;
+      kelembapanTerakhir = kelembapan;
+    }
+    // Perintah dari server diambil sebelum kipas diatur (menyusul).
+    if (fanMode == "auto") {
+      terapkanKipas(hitungKipasAuto(tegangan, suhuTerakhir));
+    }
+    kirimTelemetri(tegangan, suhuTerakhir, kelembapanTerakhir);
+    Serial.print("Tegangan: ");
+    Serial.print(tegangan);
+    Serial.print(" V, kipas: ");
+    Serial.print(fanSpeedPercent);
+    Serial.println("%");
   }
   delay(100);
 }
