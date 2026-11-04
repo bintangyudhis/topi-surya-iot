@@ -6,7 +6,7 @@ import { hitungStatistikHarian, rentangHariWib, tanggalHariIniWib } from "@/lib/
 // satu hari WIB (terlama dulu) plus statistik hariannya. Satu hari penuh
 // pada interval 10 detik maksimal 8.640 baris; batas 10.000 menjaga
 // respons tetap waras bila interval pengiriman dipersingkat.
-// ?format=csv mengunduh baris yang sama sebagai CSV (menyusul).
+// ?format=csv mengunduh baris yang sama sebagai CSV.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tanggal = searchParams.get("tanggal") ?? tanggalHariIniWib();
@@ -26,6 +26,27 @@ export async function GET(request: Request) {
     orderBy: { recordedAt: "asc" },
     take: 10000,
   });
+  if (searchParams.get("format") === "csv") {
+    const header = "recordedAt,deviceId,panelVoltage,temperature,humidity,fanSpeed";
+    const isi = baris
+      .map((b) =>
+        [
+          b.recordedAt.toISOString(),
+          `"${b.deviceId.replaceAll('"', '""')}"`,
+          b.panelVoltage,
+          b.temperature,
+          b.humidity,
+          b.fanSpeed,
+        ].join(","),
+      )
+      .join("\n");
+    return new NextResponse(`${header}\n${isi}\n`, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="riwayat-${tanggal}.csv"`,
+      },
+    });
+  }
   return NextResponse.json({
     tanggal,
     deviceId: deviceId?.trim() ?? null,
