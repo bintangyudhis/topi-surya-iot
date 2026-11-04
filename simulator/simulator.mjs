@@ -75,5 +75,45 @@ async function kirimTelemetri(tegangan) {
   }
 }
 
-// Polling perintah + satu siklus kirim — loop lengkap menyusul.
+async function ambilPerintah() {
+  const res = await fetch(`${SERVER_URL}/api/command?deviceId=${encodeURIComponent(DEVICE_ID)}`);
+  if (!res.ok) return;
+  const json = await res.json();
+  if (!json.data || json.data.id === lastCommandId) return;
+  lastCommandId = json.data.id;
+  fanMode = json.data.mode;
+  if (fanMode === "manual") {
+    fanSpeed = json.data.fanSpeed;
+  } else {
+    batasAtasAuto = json.data.fanSpeed;
+  }
+  perintahBaruDiterapkan = json.data.id;
+  console.log(`[${new Date().toISOString()}] perintah baru: mode ${fanMode}, fanSpeed ${json.data.fanSpeed}`);
+}
+
+async function satuSiklus() {
+  try {
+    await ambilPerintah();
+    const tegangan = teganganPanelSimulasi();
+    langkahSensor();
+    if (fanMode === "auto") {
+      fanSpeed = Math.min(hitungKipasAuto(tegangan, suhu), batasAtasAuto);
+    }
+    await kirimTelemetri(tegangan);
+  } catch (galat) {
+    console.error(`[${new Date().toISOString()}] siklus gagal:`, galat.message);
+  }
+}
+
+console.log(`Simulator ${DEVICE_ID} -> ${SERVER_URL} tiap ${INTERVAL_MS} ms (Ctrl+C untuk berhenti).`);
+void satuSiklus();
+const timer = setInterval(satuSiklus, INTERVAL_MS);
+process.on("SIGINT", () => {
+  clearInterval(timer);
+  console.log("Simulator berhenti.");
+  process.exit(0);
+});
+
+
+// Fungsi diekspor supaya modelnya bisa dipakai ulang / diuji dari skrip lain.
 export { teganganPanelSimulasi, langkahSensor, hitungKipasAuto, kirimTelemetri };
