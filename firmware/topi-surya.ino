@@ -111,6 +111,8 @@ float suhuTerakhir = 0;
 float kelembapanTerakhir = 0;
 // Id perintah yang baru diterapkan dan belum dikonfirmasi ke server.
 String perintahBaruDiterapkan = "";
+// Batas atas kecepatan pada mode auto (dari perintah server, default 100).
+int batasAtasAuto = 100;
 
 void kirimTelemetri(float tegangan, float suhu, float kelembapan) {
   if (WiFi.status() != WL_CONNECTED) return;
@@ -138,6 +140,43 @@ void kirimTelemetri(float tegangan, float suhu, float kelembapan) {
     Serial.println(kode);
   }
   http.end();
+}
+
+// Mengambil perintah terbaru dari server. Parsing JSON dilakukan manual
+// dengan pencarian string supaya tidak menambah dependensi pustaka JSON;
+// bentuk jawaban server tetap (id, fanSpeed, mode), jadi pencariannya aman.
+void ambilPerintah() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  HTTPClient http;
+  http.begin(String(SERVER_URL) + "/api/command?deviceId=" + String(DEVICE_ID));
+  int kode = http.GET();
+  if (kode != 200) {
+    http.end();
+    return;
+  }
+  String badan = http.getString();
+  http.end();
+  int awalId = badan.indexOf("\"id\":\"");
+  if (awalId < 0) return;  // data: null — belum ada perintah
+  int akhirId = badan.indexOf("\"", awalId + 6);
+  String id = badan.substring(awalId + 6, akhirId);
+  if (id == lastCommandId) return;  // sudah diterapkan sebelumnya
+  int awalKecepatan = badan.indexOf("\"fanSpeed\":");
+  int awalMode = badan.indexOf("\"mode\":\"");
+  if (awalKecepatan < 0 || awalMode < 0) return;
+  int kecepatan = badan.substring(awalKecepatan + 11).toInt();
+  int akhirMode = badan.indexOf("\"", awalMode + 8);
+  String mode = badan.substring(awalMode + 8, akhirMode);
+  lastCommandId = id;
+  fanMode = mode;
+  if (mode == "manual") {
+    terapkanKipas(kecepatan);
+  } else {
+    // Mode auto: angka fanSpeed dari server dipakai sebagai batas atas.
+    batasAtasAuto = kecepatan;
+  }
+  // Konfirmasi dikirim bersama telemetri berikutnya.
+  perintahBaruDiterapkan = id;
 }
 
 void setup() {
@@ -168,9 +207,10 @@ void loop() {
       suhuTerakhir = suhu;
       kelembapanTerakhir = kelembapan;
     }
-    // Perintah dari server diambil sebelum kipas diatur (menyusul).
+    // Perintah dari server diambil sebelum kipas diatur.
+    ambilPerintah();
     if (fanMode == "auto") {
-      terapkanKipas(hitungKipasAuto(tegangan, suhuTerakhir));
+      terapkanKipas(min(hitungKipasAuto(tegangan, suhuTerakhir), batasAtasAuto));
     }
     kirimTelemetri(tegangan, suhuTerakhir, kelembapanTerakhir);
     Serial.print("Tegangan: ");
